@@ -1,0 +1,20 @@
+version: "3"
+
+services:
+  squid:
+    privileged: true
+    # network_mode: host
+    container_name: squid
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile
+    volumes:
+      - ./squid.conf:/etc/squid/squid.conf:ro
+      - ./cache:/var/cache/squid:rw
+      - ./log:/var/log:rw
+      - /etc/localtime:/etc/localtime:ro
+      - ./cert:/etc/squid-cert:rw
+    ports:
+      - 3128:3128
+      - 4128:4128
+    restart: always
