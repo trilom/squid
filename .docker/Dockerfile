@@ -1,25 +1,32 @@
-FROM alpine:3.12
+FROM alpine:3.13.1
 
 ENV CN=squid.local \
     O=squid \
     OU=squid \
     C=US \
-    SQUID_LOG_DIR="/var/log/squid" \
     SQUID_CACHE_DIR="/var/cache/squid" \
-    SQUID_CERT_DIR="/etc/squid-cert"
+    SQUID_CERT_DIR="/etc/squid-cert" \
+    SQUID_LOG_DIR="/var/log/squid"
 
-RUN apk update && apk add --no-cache \
-    bash \
+RUN apk add --no-cache \
+    dumb-init=1.2.5-r0 \
+    su-exec=0.2-r1 \
+    # bash=5.1.0-r0 \
     libressl \
-    squid && \
-    rm -rf /var/cache/apk/*
+    squid=5.0.4-r0 \
+    && rm -rf /var/cache/apk/* \
+    ; 
+    # touch /var/run/squid.pid && chown squid:squid /var/run/squid.pid
+# RUN 
 
 # ssl certs
-RUN apk update && apk add --no-cache ca-certificates && rm -rf /var/cache/apk/*
-COPY .docker/openssl.cnf.add /etc/ssl
+RUN apk add --no-cache \
+    ca-certificates \
+    && rm -rf /var/cache/apk/*
+COPY .docker/openssl.cnf.add /etc/ssl/openssl.cnf.add
 RUN cat /etc/ssl/openssl.cnf.add >> /etc/ssl/openssl.cnf
 
-RUN mkdir ${SQUID_CERT_DIR} && chown 31:31 ${SQUID_CERT_DIR}
+RUN install -d ${SQUID_CERT_DIR} -o squid -g squid
 
 # private.pem
 RUN libressl req -new -newkey rsa:4096 -sha256 -days 365 -nodes -x509 \
@@ -45,13 +52,10 @@ RUN rm -rfv /var/lib/ssl_db/ && \
 EXPOSE 3128
 # for ssl
 EXPOSE 4128
-
+# RUN touch /var/run/squid.pid && chown 31:31 /var/run/squid.pid
 COPY .docker/entrypoint.sh /sbin/entrypoint.sh
-RUN chmod 755 /sbin/entrypoint.sh
-# for custom pid
-RUN touch /var/run/squid.pid && chown 31:31 /var/run/squid.pid
 # this runs the rest as squid, sets entrypoint as squid user and runs the
 # entrypoint as squid
-USER squid
-
+# USER squid
+CMD ["squid", "-NYCd", "1"]
 ENTRYPOINT ["/sbin/entrypoint.sh"]

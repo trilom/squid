@@ -1,32 +1,34 @@
-#!/bin/bash
+#!/usr/bin/dumb-init /bin/sh
 set -e
 
 create_log_dir() {
-  mkdir -p ${log_dir}
-  chown -R 31:31 ${log_dir}
+  mkdir -p ${SQUID_LOG_DIR}
+  chown -R squid:squid ${SQUID_LOG_DIR}
 }
 
 create_cache_dir() {
-  mkdir -p ${cache_dir}
-  chown -R 31:31 ${cache_dir}
+  mkdir -p ${SQUID_CACHE_DIR}
+  chown -R squid:squid ${SQUID_CACHE_DIR}
 }
 
-# allow arguments to be passed to squid
-if [[ ${1:0:1} = '-' ]]; then
-  EXTRA_ARGS="$@"
-  set --
-elif [[ ${1} == squid || ${1} == $(which squid) ]]; then
-  EXTRA_ARGS="${@:2}"
-  set --
-fi
+create_pid_file() {
+  touch /var/run/squid.pid
+  chown squid:squid /var/run/squid.pid
+}
 
-# default behaviour is to launch squid
-if [[ -z ${1} ]]; then
+if [ "${1:0:1}" = '-' ]; then
+  set -- squid "$@"
+fi
+if [ "$1" = 'reconfigure' ]; then
+  set -- squid -k reconfigure "$@"
+fi
+if [ "$1" = 'squid' ]; then
+  # su-exec squid:squid touch /var/run/squid.pid
+  # ls -la /var/run/
+  create_pid_file
   create_log_dir
   create_cache_dir
-  `which squid` -N -z
-  sleep 5
-  exec $(which squid) -NYCd 1 ${EXTRA_ARGS}
-else
-  exec "$(which squid) $@"
+  su-exec squid:squid squid -N -z
+  set -- su-exec squid:squid "$@"
 fi
+exec "$@"

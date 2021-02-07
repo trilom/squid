@@ -7,9 +7,9 @@ build:
 run:
 	docker container run \
 		-d \
-		-v ${PWD}/cache/:/var/cache/squid/ \
-		-v ${PWD}/log/:/var/log/ \
-		-v ${PWD}/cert/:/etc/squid-cert/ \
+		-v /opt/cache/:/var/cache/squid/ \
+		-v /opt/log/:/var/log/ \
+		-v /opt/cert/:/etc/squid-cert/ \
 		--read-only -v ${PWD}/squid.conf:/etc/squid/squid.conf \
 		--name squid \
 		$(CONTAINER)
@@ -19,3 +19,5 @@ clean:
 	docker stop squid && docker rm squid && docker image rm squid
 configure:
 	sudo docker exec squid squid -k reconfigure -f /etc/squid/squid.conf
+
+
