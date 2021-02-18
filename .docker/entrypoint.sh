@@ -12,6 +12,7 @@ create_cache_dir() {
 }
 
 create_pid_file() {
+  rm -rf /var/run/squid.pid
   touch /var/run/squid.pid
   chown squid:squid /var/run/squid.pid
 }
@@ -23,7 +24,7 @@ if [ "$1" = 'reconfigure' ]; then
   set -- squid -k reconfigure "$@"
 fi
 if [ "$1" = 'squid' ]; then
-  # su-exec squid:squid touch /var/run/squid.pid
+  # chown squid:squid /var/run/squid.pid
   # ls -la /var/run/
   create_pid_file
   create_log_dir
